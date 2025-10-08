@@ -39,11 +39,8 @@ Install the following Python library:
     STREAMER_NAME = "streamer_username"
     CHECK_INTERVAL = 30  # In seconds
 
-3. Replace the browser process name if you want to close the stream tab automatically (e.g. chrome.exe, opera.exe):
 
-        os.system("taskkill /IM opera.exe /F")
-
-4. Run the script:
+3. Run the script:
 
         python twitch_checker.py
 
@@ -59,13 +56,6 @@ By default, this program saves your Twitch access token in a safe local folder:
 
 
 This prevents generating a new token every time you launch the script.
-
-
-## 🌐 Browser Window Behavior
-
-When the streamer goes live, their Twitch page will open in a **new separate window**, keeping your existing browser tabs untouched.
-
-When the stream ends, this dedicated window can be closed automatically using `os.system("taskkill /IM your_browser.exe /F")`.
 
 
 ## 🖥️ Run on Windows Startup (Optional)
@@ -86,10 +76,6 @@ When the stream ends, this dedicated window can be closed automatically using `o
 
 Change CHECK_INTERVAL to control how frequently it checks for the stream status.
 
-Adjust the browser process name based on your setup.
-
-You can modify the webbrowser.open() behavior to use specific browsers if needed.
-
 
 ## 📄 License
 This Twitch Live Checker is open-source and free to use and modify.
@@ -101,81 +87,5 @@ Developed in Python using:
 
         Twitch API
         requests
-
-Built with ♥ by naarvent
-
-
 ## Code
 
-        import requests
-        import time
-        import webbrowser
-        import os
-        from pathlib import Path
-        
-        # --- Safe directory for storing the token ---
-        documents_path = Path.home() / "Documents"
-        project_dir = documents_path / "naarvent's projects" / "TwitchLiveChecker"
-        project_dir.mkdir(parents=True, exist_ok=True)
-        
-        token_path = project_dir / "token.txt"
-        
-        # --- Configuration ---
-        CLIENT_ID = "YOUR_CLIENT_ID"
-        CLIENT_SECRET = "YOUR_CLIENT_SECRET"
-        STREAMER_NAME = "STREAMER_NAME"
-        CHECK_INTERVAL = 30  # seconds between checks
-        stream_url = f"https://www.twitch.tv/{STREAMER_NAME}"
-        opened = False  # To track if the stream tab is open
-        
-        # --- Token handling ---
-        def get_access_token():
-            if token_path.exists():
-                with open(token_path, "r") as f:
-                    token = f.read().strip()
-                    if token:
-                        return token
-        
-            url = "https://id.twitch.tv/oauth2/token"
-            payload = {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "grant_type": "client_credentials"
-            }
-            response = requests.post(url, data=payload)
-            token = response.json().get("access_token")
-            if token:
-                with open(token_path, "w") as f:
-                    f.write(token)
-            return token
-        
-        # --- Check if the streamer is live ---
-        def is_stream_live(token):
-            url = f"https://api.twitch.tv/helix/streams?user_login={STREAMER_NAME}"
-            headers = {
-                "Client-ID": CLIENT_ID,
-                "Authorization": f"Bearer {token}"
-            }
-            response = requests.get(url, headers=headers)
-            data = response.json()
-            return bool(data.get("data"))
-        
-        # --- Main loop ---
-        access_token = get_access_token()
-        
-        while True:
-            try:
-                if is_stream_live(access_token):
-                    if not opened:
-                        webbrowser.open_new(stream_url)  # Open in a new separate window
-                        opened = True
-                        print(f"{STREAMER_NAME} is live. Opening Twitch...")
-                else:
-                    if opened:
-                        os.system("taskkill /IM chrome.exe /F")  # Replace with your browser's EXE name
-                        opened = False
-                        print(f"{STREAMER_NAME} ended the stream. Closing Twitch...")
-            except Exception as e:
-                print(f"Error: {e}")
-        
-            time.sleep(CHECK_INTERVAL)
